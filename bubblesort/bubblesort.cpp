@@ -5,7 +5,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <chrono>
-#include <execution>
+#include "omploop.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,16 +33,13 @@ int main (int argc, char* argv[]) {
 
   int n = atoi(argv[1]);
   int nbthreads = atoi(argv[2]);
+
+  OmpLoop omp;
+  omp.setNbThread(nbthreads);
   
   // get arr data
   int * arr = new int [n];
   generateMergeSortData (arr, n);
-
-  //DANGER ZONE
-/* 
-par.for(0, a.length(), 1, [&](int i){
-b[i] = 2*a[i];})
-*/
   
   std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
   
@@ -50,13 +47,21 @@ b[i] = 2*a[i];})
   int swapped = 1;
   while (swapped) {
     swapped = 0;
-    parfor (0, n, 1,  [&](int i) {
-      if (arr[i-1] > arr[i]) {
-        swap(arr, i-1, i);
-        swapped = 1;
-      }
-    })
-	       
+    omp.parfor<int>(0, n, 1,
+		   [&](int& tls) -> void{
+		     
+		   },
+		   [&](int i, int& tls) -> void{
+		     if (arr[i-1] > arr[i]) {
+		       swap(arr, i-1, i);
+		       swapped = 1;
+		     }
+		   },
+		     
+		   [&](int tls) -> void{
+		   
+	           }
+		 );
     n--;
   }
 
